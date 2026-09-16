@@ -20,6 +20,22 @@ function initEpubReader(encodedUrl) {
   });
 
   window.currentRendition = rendition;
+  
+  // Đồng bộ ô Mục lục khi trang thay đổi
+rendition.on('relocated', function(location) {
+  const tocSelect = document.getElementById('toc-select');
+  if (!tocSelect || !location.start) return;
+
+  const currentHref = location.start.href;
+
+  for (let i = 0; i < tocSelect.options.length; i++) {
+    const option = tocSelect.options[i];
+    if (option.value && currentHref.includes(option.value)) {
+      tocSelect.value = option.value;
+      break;
+    }
+  }
+});
 
   function applyThemeToDoc(doc, isDark) {
     if (!doc) return;
@@ -299,4 +315,10 @@ function initEpubReader(encodedUrl) {
 
   document.getElementById("prev-btn").addEventListener("click", function() { rendition.prev(); });
   document.getElementById("next-btn").addEventListener("click", function() { rendition.next(); });
+
+  document.getElementById('toc-select')?.addEventListener('change', function(e) {
+  if (e.target.value && typeof rendition !== 'undefined') {
+    rendition.display(e.target.value);
+  }
+});
 }
