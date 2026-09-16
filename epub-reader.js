@@ -26,11 +26,23 @@ rendition.on('relocated', function(location) {
   const tocSelect = document.getElementById('toc-select');
   if (!tocSelect || !location.start) return;
 
-  const currentHref = location.start.href;
+  // 1. Giải mã ký tự URL mã hóa và xóa phần anchor (#) phía sau
+  const currentHref = decodeURIComponent(location.start.href).split('#')[0].trim();
 
   for (let i = 0; i < tocSelect.options.length; i++) {
     const option = tocSelect.options[i];
-    if (option.value && currentHref.includes(option.value)) {
+    if (!option.value) continue;
+
+    // 2. Chuẩn hóa giá trị option
+    const optionHref = decodeURIComponent(option.value).split('#')[0].trim();
+
+    // 3. So sánh khớp tên file/đường dẫn linh hoạt cho iOS
+    if (
+      currentHref === optionHref ||
+      currentHref.endsWith(optionHref) ||
+      optionHref.endsWith(currentHref) ||
+      (optionHref !== '' && currentHref.includes(optionHref))
+    ) {
       tocSelect.value = option.value;
       break;
     }
@@ -306,6 +318,18 @@ rendition.on('relocated', function(location) {
   }
 
   fsBtn.addEventListener("click", function() { toggleFullscreen(!isFullScreen); });
+  // Hàm xử lý khi bấm ESC
+  function exitFullScreenHandler(e) {
+    if ((e.key === 'Escape' || e.keyCode === 27) && isFullScreen) {
+      toggleFullscreen(false); // Gọi lại hàm của bạn để tắt toàn màn hình
+    }
+  }
+
+  // Lắng nghe phím ESC trên trang chính và iframe
+  document.addEventListener('keydown', exitFullScreenHandler);
+  if (typeof rendition !== 'undefined') {
+    rendition.on('keydown', exitFullScreenHandler);
+  }
 
   var resizeTimer;
   window.addEventListener("resize", function() {
