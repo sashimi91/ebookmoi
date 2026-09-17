@@ -4,7 +4,7 @@
   let isInternalDark = false;
   let bookmarkKey = "";
 
-  // 1. Hàm đổi giao diện Dark/Light mode
+  // 1. Hàm đổi giao diện Dark/Light mode.
   window.applyEpubTheme = function (isDark) {
     if (typeof isDark !== "boolean") isDark = isInternalDark;
 
@@ -79,30 +79,32 @@
     });
   };
 
-  // 2. Chuyển chương thông minh (Khắc phục lỗi lệch đường dẫn relative/absolute)
+  // 2. Chuyển chương thông minh (Tương thích 100% PC & iOS)
   function goToChapter(href) {
     if (!href || !rendition) return;
 
-    rendition.display(href).catch(function () {
-      var parts = href.split('#');
-      var rawPath = decodeURIComponent(parts[0]);
-      var anchor = parts[1] ? '#' + parts[1] : '';
+    var cleanHref = href.replace(/^(\.\.\/|\.\/)+/, '');
 
-      var cleanPath = rawPath.replace(/^(\.\.\/|\.\/)+/, '');
-      var fileName = rawPath.split('/').pop();
+    setTimeout(function () {
+      rendition.display(cleanHref).catch(function () {
+        var parts = cleanHref.split('#');
+        var rawPath = decodeURIComponent(parts[0]);
+        var anchor = parts[1] ? '#' + parts[1] : '';
+        var fileName = rawPath.split('/').pop();
 
-      if (book && book.spine && book.spine.spineItems) {
-        var matchedItem = book.spine.spineItems.find(function (item) {
-          return item.href.endsWith(cleanPath) ||
-                 cleanPath.endsWith(item.href) ||
-                 item.href.endsWith(fileName);
-        });
+        if (book && book.spine && book.spine.spineItems) {
+          var matchedItem = book.spine.spineItems.find(function (item) {
+            return item.href.endsWith(rawPath) ||
+                   rawPath.endsWith(item.href) ||
+                   item.href.endsWith(fileName);
+          });
 
-        if (matchedItem) {
-          rendition.display(matchedItem.href + anchor);
+          if (matchedItem) {
+            rendition.display(matchedItem.href + anchor);
+          }
         }
-      }
-    });
+      });
+    }, 100);
   }
 
   // 3. Toàn màn hình CSS
@@ -185,6 +187,22 @@
     });
 
     window.currentRendition = rendition;
+	
+	// Hàm lật trang bằng phím mũi tên Trái / Phải
+    function handleArrowKeys(e) {
+      // Bỏ qua nếu người dùng đang dùng phím mũi tên để chọn Dropdown Mục lục / Font
+      var tag = e.target ? e.target.tagName.toLowerCase() : "";
+      if (tag === "input" || tag === "textarea" || tag === "select") return;
+
+      if (e.key === "ArrowLeft" || e.keyCode === 37) {
+        rendition.prev();
+      } else if (e.key === "ArrowRight" || e.keyCode === 39) {
+        rendition.next();
+      }
+    }
+
+    // Bắt sự kiện trên toàn trang chính
+    document.addEventListener("keydown", handleArrowKeys);
 
     // Lắng nghe phím bấm trong iframe
     rendition.hooks.content.register(function (contents) {
@@ -204,7 +222,10 @@
       }, true);
     });
 
-    rendition.on('keydown', exitFullScreenHandler);
+    rendition.on('keydown', function (e) {
+      exitFullScreenHandler(e);
+      handleArrowKeys(e);
+    });
 
     // Mở trang sách (Khôi phục Bookmark)
     var startPromise = savedCfi ? rendition.display(savedCfi) : rendition.display();
@@ -226,7 +247,7 @@
       if (loc && loc.start) updateProgress(loc);
     });
 
-    // Nạp Mục lục đa cấp (Nested TOC)
+    // Nạp Mục lục đa cấp (An toàn cho cả chương nhóm không có link)
     book.loaded.navigation.then(function (toc) {
       var select = document.getElementById("toc-select");
       if (!select) return;
@@ -240,14 +261,17 @@
       function renderTocItems(items, level) {
         if (!items) return;
         items.forEach(function (chapter) {
-          if (!chapter.href) return;
-
-          var option = document.createElement("option");
-          option.text = "\u2014 ".repeat(level) + chapter.label.trim();
-          option.value = chapter.href;
-          select.appendChild(option);
-
           var subItems = chapter.subitems || chapter.children;
+          var rawHref = chapter.href ? chapter.href.trim() : "";
+
+          if (rawHref || (subItems && subItems.length > 0)) {
+            var option = document.createElement("option");
+            option.text = "\u2014 ".repeat(level) + (chapter.label ? chapter.label.trim() : "");
+            option.value = rawHref;
+            if (!rawHref) option.disabled = true;
+            select.appendChild(option);
+          }
+
           if (subItems && subItems.length > 0) {
             renderTocItems(subItems, level + 1);
           }
@@ -345,9 +369,12 @@
 
     if (tocSelect) {
       tocSelect.onchange = function (e) {
-        if (e.target.value) {
-          goToChapter(e.target.value);
+        var selectedHref = e.target.value;
+        if (selectedHref) {
           e.target.blur();
+          setTimeout(function () {
+            goToChapter(selectedHref);
+          }, 50);
         }
       };
     }
