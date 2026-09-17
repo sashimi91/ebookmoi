@@ -39,7 +39,7 @@
     }
   };
 
-// 2. Chuyển chương thông minh (Làm sạch tiền tố ../ và hỗ trợ Anchor)
+// 2. Chuyển chương thông minh (Làm sạch tiền tố ../ và hỗ trợ Anchor).
 function goToChapter(href) {
   if (!href || !rendition) return;
 
