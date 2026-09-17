@@ -166,8 +166,6 @@
   // 4. Khởi tạo chính
   window.initEpubReader = function (encodedUrl) {
     if (!encodedUrl) return;
-
-    // GIẢI MÃ BASE64 URL SÁCH
     var bookUrl = atob(encodedUrl);
 
     bookmarkKey = "epub_pos_" + btoa(window.location.pathname + encodedUrl.slice(-20)).replace(/=/g, '');
@@ -300,16 +298,6 @@
 
       if (location && location.start && location.start.cfi) {
         try { localStorage.setItem(bookmarkKey, location.start.cfi); } catch (err) {}
-      }
-    });
-
-    // Gán nút bấm & Chống zoom iOS
-    ['prev-btn', 'next-btn'].forEach(function (id) {
-      var btn = document.getElementById(id);
-      if (btn) {
-        btn.style.touchAction = 'manipulation';
-        btn.style.webkitUserSelect = 'none';
-        btn.style.userSelect = 'none';
       }
     });
 
