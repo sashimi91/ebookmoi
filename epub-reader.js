@@ -4,7 +4,7 @@
   let isInternalDark = false;
   let bookmarkKey = "";
 
-  // 1. Hàm đổi giao diện Dark/Light mode.
+  // 1. Hàm đổi giao diện Dark/Light mode
   window.applyEpubTheme = function (isDark) {
     if (typeof isDark !== "boolean") isDark = isInternalDark;
 
@@ -79,29 +79,58 @@
     });
   };
 
-  // 2. Chuyển chương thông minh (Tương thích 100% PC & iOS)
+  // 2. Chuyển chương thông minh (Khắc phục triệt để lỗi iOS WebKit Mục lục cấp 2)
   function goToChapter(href) {
-    if (!href || !rendition) return;
+    if (!href || !rendition || !book) return;
 
-    var cleanHref = href.replace(/^(\.\.\/|\.\/)+/, '');
+    // Tách riêng đường dẫn file và Anchor ID (#)
+    var parts = href.split('#');
+    var rawPath = decodeURIComponent(parts[0]).trim();
+    var anchor = parts[1] ? parts[1].trim() : '';
+
+    var cleanPath = rawPath.replace(/^(\.\.\/|\.\/)+/, '');
+    var fileName = cleanPath.split('/').pop();
+
+    // Khớp Spine Item chính xác trước khi gửi lệnh cho Epub.js
+    var matchedItem = null;
+    if (book.spine && book.spine.spineItems) {
+      matchedItem = book.spine.spineItems.find(function (item) {
+        var itemHref = decodeURIComponent(item.href);
+        return itemHref === cleanPath ||
+               itemHref.endsWith(cleanPath) ||
+               cleanPath.endsWith(itemHref) ||
+               itemHref.endsWith(fileName);
+      });
+    }
+
+    var targetPath = matchedItem ? matchedItem.href : cleanPath;
+    var fullTarget = targetPath + (anchor ? '#' + anchor : '');
 
     setTimeout(function () {
-      rendition.display(cleanHref).catch(function () {
-        var parts = cleanHref.split('#');
-        var rawPath = decodeURIComponent(parts[0]);
-        var anchor = parts[1] ? '#' + parts[1] : '';
-        var fileName = rawPath.split('/').pop();
-
-        if (book && book.spine && book.spine.spineItems) {
-          var matchedItem = book.spine.spineItems.find(function (item) {
-            return item.href.endsWith(rawPath) ||
-                   rawPath.endsWith(item.href) ||
-                   item.href.endsWith(fileName);
-          });
-
-          if (matchedItem) {
-            rendition.display(matchedItem.href + anchor);
-          }
+      rendition.display(fullTarget).then(function () {
+        // Ép iOS WebKit cuộn DOM đến vị trí Anchor nếu các chương cấp 2 nằm chung file HTML
+        if (anchor) {
+          setTimeout(function () {
+            try {
+              var contents = rendition.getContents();
+              if (contents && contents.length > 0) {
+                var doc = contents[0].document || contents[0].window.document;
+                if (doc) {
+                  var el = doc.getElementById(anchor) || doc.querySelector('[name="' + anchor + '"]');
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }
+              }
+            } catch (e) {
+              console.warn("Không thể cuộn anchor trên iOS:", e);
+            }
+          }, 100);
+        }
+      }).catch(function () {
+        // Fallback mở file thô nếu không tìm thấy Anchor
+        if (matchedItem) {
+          rendition.display(matchedItem.href);
         }
       });
     }, 100);
@@ -187,10 +216,9 @@
     });
 
     window.currentRendition = rendition;
-	
-	// Hàm lật trang bằng phím mũi tên Trái / Phải
+
+    // Hàm lật trang bằng phím mũi tên Trái / Phải
     function handleArrowKeys(e) {
-      // Bỏ qua nếu người dùng đang dùng phím mũi tên để chọn Dropdown Mục lục / Font
       var tag = e.target ? e.target.tagName.toLowerCase() : "";
       if (tag === "input" || tag === "textarea" || tag === "select") return;
 
@@ -201,7 +229,6 @@
       }
     }
 
-    // Bắt sự kiện trên toàn trang chính
     document.addEventListener("keydown", handleArrowKeys);
 
     // Lắng nghe phím bấm trong iframe
@@ -323,6 +350,15 @@
 
       if (location && location.start && location.start.cfi) {
         try { localStorage.setItem(bookmarkKey, location.start.cfi); } catch (err) {}
+      }
+    });
+
+    ['prev-btn', 'next-btn'].forEach(function (id) {
+      var btn = document.getElementById(id);
+      if (btn) {
+        btn.style.touchAction = 'manipulation';
+        btn.style.webkitUserSelect = 'none';
+        btn.style.userSelect = 'none';
       }
     });
 
