@@ -231,29 +231,45 @@ rendition.on('relocated', function(location) {
     });
   });
 
-  book.loaded.navigation.then(function(toc) {
-    var select = document.getElementById("toc-select");
-    select.innerHTML = "";
-    var defaultOption = document.createElement("option");
-    defaultOption.text = "-- Chọn chương --";
-    defaultOption.value = "";
-    select.appendChild(defaultOption);
+book.loaded.navigation.then(function(toc) {
+  var select = document.getElementById("toc-select");
+  if (!select) return;
 
-    function renderTocItems(items, level) {
-      items.forEach(function(chapter) {
-        var option = document.createElement("option");
-        option.text = "— ".repeat(level) + chapter.label.trim();
-        option.value = chapter.href;
-        select.appendChild(option);
-        if (chapter.subitems && chapter.subitems.length > 0) renderTocItems(chapter.subitems, level + 1);
-      });
-    }
-    renderTocItems(toc.toc, 0);
+  select.innerHTML = "";
+  var defaultOption = document.createElement("option");
+  defaultOption.text = "-- Chọn chương --";
+  defaultOption.value = "";
+  select.appendChild(defaultOption);
 
-    select.addEventListener("change", function(e) {
-      if (e.target.value) rendition.display(e.target.value);
+  function renderTocItems(items, level) {
+    if (!items) return;
+    items.forEach(function(chapter) {
+      if (!chapter.href) return;
+
+      var option = document.createElement("option");
+      option.text = "— ".repeat(level) + chapter.label.trim();
+      option.value = chapter.href;
+      select.appendChild(option);
+
+      // Quét cả subitems và children để tương thích mọi bản EPUB
+      var subItems = chapter.subitems || chapter.children;
+      if (subItems && subItems.length > 0) {
+        renderTocItems(subItems, level + 1);
+      }
     });
+  }
+
+  renderTocItems(toc.toc, 0);
+});
+
+// Sự kiện lắng nghe chuyển chương khi chọn từ menu
+var tocSelect = document.getElementById("toc-select");
+if (tocSelect && !tocSelect.dataset.bound) {
+  tocSelect.addEventListener("change", function(e) {
+    if (e.target.value) rendition.display(e.target.value);
   });
+  tocSelect.dataset.bound = "true";
+}
 
   var currentFontSize = 100;
   document.getElementById("zoom-in").addEventListener("click", function() {
