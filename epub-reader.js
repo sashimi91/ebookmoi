@@ -166,6 +166,7 @@
   // 4. Khởi tạo chính
   window.initEpubReader = function (encodedUrl) {
     if (!encodedUrl) return;
+
     var bookUrl = atob(encodedUrl);
 
     bookmarkKey = "epub_pos_" + btoa(window.location.pathname + encodedUrl.slice(-20)).replace(/=/g, '');
