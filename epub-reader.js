@@ -39,26 +39,33 @@
     }
   };
 
-  // 2. Chuyển chương thông minh (Khắc phục lỗi lệch đường dẫn OEBPS/Text)
-  function goToChapter(href) {
-    if (!href || !rendition) return;
+// 2. Chuyển chương thông minh (Làm sạch tiền tố ../ và hỗ trợ Anchor)
+function goToChapter(href) {
+  if (!href || !rendition) return;
 
-    rendition.display(href).catch(function () {
-      var parts = href.split('#');
-      var cleanPath = decodeURIComponent(parts[0]);
-      var anchor = parts[1] ? '#' + parts[1] : '';
+  // Thử chuyển trang trực tiếp với đường dẫn gốc
+  rendition.display(href).catch(function () {
+    var parts = href.split('#');
+    var rawPath = decodeURIComponent(parts[0]);
+    var anchor = parts[1] ? '#' + parts[1] : '';
 
-      if (book && book.spine && book.spine.spineItems) {
-        var matchedItem = book.spine.spineItems.find(function (item) {
-          return item.href.endsWith(cleanPath) || cleanPath.endsWith(item.href);
-        });
+    // Bóc tách làm sạch các tiền tố ../ hoặc ./ ở đầu đường dẫn
+    var cleanPath = rawPath.replace(/^(\.\.\/|\.\/)+/, '');
+    var fileName = rawPath.split('/').pop();
 
-        if (matchedItem) {
-          rendition.display(matchedItem.href + anchor);
-        }
+    if (book && book.spine && book.spine.spineItems) {
+      var matchedItem = book.spine.spineItems.find(function (item) {
+        return item.href.endsWith(cleanPath) ||
+               cleanPath.endsWith(item.href) ||
+               item.href.endsWith(fileName);
+      });
+
+      if (matchedItem) {
+        rendition.display(matchedItem.href + anchor);
       }
-    });
-  }
+    }
+  });
+}
 
   // 3. Toàn màn hình CSS
   function toggleFullscreen(active) {
