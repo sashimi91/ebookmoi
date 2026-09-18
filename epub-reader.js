@@ -216,16 +216,21 @@
     window.currentRendition = rendition;
 
     // Hàm lật trang bằng phím mũi tên Trái / Phải
-    function handleArrowKeys(e) {
-      var tag = e.target ? e.target.tagName.toLowerCase() : "";
-      if (tag === "input" || tag === "textarea" || tag === "select") return;
-
-      if (e.key === "ArrowLeft" || e.keyCode === 37) {
-        rendition.prev();
-      } else if (e.key === "ArrowRight" || e.keyCode === 39) {
-        rendition.next();
-      }
+  function handleArrowKeys(e) {
+  var tag = e.target ? e.target.tagName.toLowerCase() : "";
+  if (tag === "input" || tag === "textarea") return;
+  if (e.key === "ArrowLeft" || e.keyCode === 37 || e.key === "ArrowRight" || e.keyCode === 39) {
+    if (tag === "select") {
+      e.preventDefault();
+      if (e.target) e.target.blur();
     }
+    if (e.key === "ArrowLeft" || e.keyCode === 37) {
+      rendition.prev();
+    } else if (e.key === "ArrowRight" || e.keyCode === 39) {
+      rendition.next();
+    }
+  }
+}
 
     document.addEventListener("keydown", handleArrowKeys);
 
@@ -407,6 +412,7 @@
         var selectedHref = e.target.value;
         if (selectedHref) {
           e.target.blur();
+          if (document.activeElement) document.activeElement.blur();
           setTimeout(function () {
             goToChapter(selectedHref);
           }, 50);
