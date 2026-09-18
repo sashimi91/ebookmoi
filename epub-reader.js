@@ -3,6 +3,7 @@
   let isFullScreen = false;
   let isInternalDark = false;
   let bookmarkKey = "";
+  let isNavigating = false;
 
   // 1. Hàm đổi giao diện Dark/Light mode
   window.applyEpubTheme = function (isDark) {
@@ -79,11 +80,11 @@
     });
   };
 
-  // 2. Chuyển chương thông minh (Khắc phục triệt để lỗi iOS WebKit Mục lục cấp 2)
+  // 2. Chuyển chương thông minh (Chống treo Queue Lock trên iOS WebKit)
   function goToChapter(href) {
-    if (!href || !rendition || !book) return;
+    if (!href || !rendition || !book || isNavigating) return;
+    isNavigating = true;
 
-    // Tách riêng đường dẫn file và Anchor ID (#)
     var parts = href.split('#');
     var rawPath = decodeURIComponent(parts[0]).trim();
     var anchor = parts[1] ? parts[1].trim() : '';
@@ -91,7 +92,6 @@
     var cleanPath = rawPath.replace(/^(\.\.\/|\.\/)+/, '');
     var fileName = cleanPath.split('/').pop();
 
-    // Khớp Spine Item chính xác trước khi gửi lệnh cho Epub.js
     var matchedItem = null;
     if (book.spine && book.spine.spineItems) {
       matchedItem = book.spine.spineItems.find(function (item) {
@@ -106,34 +106,32 @@
     var targetPath = matchedItem ? matchedItem.href : cleanPath;
     var fullTarget = targetPath + (anchor ? '#' + anchor : '');
 
-    setTimeout(function () {
-      rendition.display(fullTarget).then(function () {
-        // Ép iOS WebKit cuộn DOM đến vị trí Anchor nếu các chương cấp 2 nằm chung file HTML
-        if (anchor) {
-          setTimeout(function () {
-            try {
-              var contents = rendition.getContents();
-              if (contents && contents.length > 0) {
-                var doc = contents[0].document || contents[0].window.document;
-                if (doc) {
-                  var el = doc.getElementById(anchor) || doc.querySelector('[name="' + anchor + '"]');
-                  if (el) {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }
+    rendition.display(fullTarget).then(function () {
+      if (anchor) {
+        setTimeout(function () {
+          try {
+            var contents = rendition.getContents();
+            if (contents && contents.length > 0) {
+              var doc = contents[0].document || contents[0].window.document;
+              if (doc) {
+                var el = doc.getElementById(anchor) || doc.querySelector('[name="' + anchor + '"]');
+                if (el) {
+                  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
               }
-            } catch (e) {
-              console.warn("Không thể cuộn anchor trên iOS:", e);
             }
-          }, 100);
-        }
-      }).catch(function () {
-        // Fallback mở file thô nếu không tìm thấy Anchor
-        if (matchedItem) {
-          rendition.display(matchedItem.href);
-        }
-      });
-    }, 100);
+          } catch (e) {
+            console.warn("Không thể cuộn anchor trên iOS:", e);
+          }
+        }, 100);
+      }
+    }).catch(function () {
+      if (matchedItem) {
+        rendition.display(matchedItem.href);
+      }
+    }).finally(function () {
+      setTimeout(function () { isNavigating = false; }, 300);
+    });
   }
 
   // 3. Toàn màn hình CSS
@@ -254,12 +252,13 @@
       handleArrowKeys(e);
     });
 
-    // Mở trang sách (Khôi phục Bookmark)
+    // Mở trang sách (Khôi phục Bookmark & Tự động dọn key lỗi)
     var startPromise = savedCfi ? rendition.display(savedCfi) : rendition.display();
     startPromise.then(function () {
       rendition.themes.font("'Be Vietnam Pro', sans-serif");
       window.applyEpubTheme(isInternalDark);
     }).catch(function () {
+      try { localStorage.removeItem(bookmarkKey); } catch (e) {}
       rendition.display().then(function () {
         rendition.themes.font("'Be Vietnam Pro', sans-serif");
         window.applyEpubTheme(isInternalDark);
@@ -274,7 +273,7 @@
       if (loc && loc.start) updateProgress(loc);
     });
 
-    // Nạp Mục lục đa cấp (An toàn cho cả chương nhóm không có link)
+    // Nạp Mục lục đa cấp
     book.loaded.navigation.then(function (toc) {
       var select = document.getElementById("toc-select");
       if (!select) return;
@@ -310,7 +309,7 @@
 
     // Cập nhật tiến trình & Đồng bộ Mục lục
     function updateProgress(location) {
-      if (!location || !location.start) return;
+      if (!location || !location.start || isNavigating) return;
 
       var select = document.getElementById("toc-select");
       if (select && location.start.href) {
