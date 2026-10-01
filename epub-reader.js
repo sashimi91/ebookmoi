@@ -270,13 +270,18 @@
       });
     });
 
-    // Khởi tạo vị trí & tiến trình
-    book.ready.then(function () {
-      return book.locations.generate(1000);
-    }).then(function () {
-      var loc = rendition.currentLocation();
-      if (loc && loc.start) updateProgress(loc);
-    });
+	// Khởi tạo vị trí: Tự động bật/tắt generate() dựa trên số lượng chương
+	book.ready.then(function () {
+	  var totalChapters = (book.spine && book.spine.spineItems) ? book.spine.spineItems.length : 0;
+	  
+	  // Chỉ tạo vị trí trang chi tiết nếu truyện có từ 200 chương trở xuống
+	  if (totalChapters > 0 && totalChapters <= 200) {
+		return book.locations.generate(1000);
+	  }
+	}).then(function () {
+	  var loc = rendition.currentLocation();
+	  if (loc && loc.start) updateProgress(loc);
+	});
 
     // Nạp Mục lục đa cấp
     book.loaded.navigation.then(function (toc) {
@@ -312,41 +317,55 @@
       renderTocItems(toc.toc, 0);
     });
 
-    // Cập nhật tiến trình & Đồng bộ Mục lục
-    function updateProgress(location) {
-      if (!location || !location.start || isNavigating) return;
+	// Cập nhật tiến trình & Đồng bộ Mục lục (Tự động linh hoạt cho cả truyện ngắn & dài)
+	function updateProgress(location) {
+	  if (!location || !location.start || isNavigating) return;
 
-      var select = document.getElementById("toc-select");
-      if (select && location.start.href) {
-        var currentHref = decodeURIComponent(location.start.href).split('#')[0].trim();
-        for (var i = 0; i < select.options.length; i++) {
-          var option = select.options[i];
-          if (!option.value) continue;
-          var optionHref = decodeURIComponent(option.value).split('#')[0].trim();
-          if (
-            currentHref === optionHref ||
-            currentHref.endsWith(optionHref) ||
-            optionHref.endsWith(currentHref) ||
-            (optionHref !== '' && currentHref.includes(optionHref))
-          ) {
-            select.value = option.value;
-            break;
-          }
-        }
-      }
+	  // 1. Đồng bộ Menu Mục lục (toc-select)
+	  var select = document.getElementById("toc-select");
+	  if (select && location.start.href) {
+		var currentHref = decodeURIComponent(location.start.href).split('#')[0].trim();
+		for (var i = 0; i < select.options.length; i++) {
+		  var option = select.options[i];
+		  if (!option.value) continue;
+		  var optionHref = decodeURIComponent(option.value).split('#')[0].trim();
+		  if (
+			currentHref === optionHref ||
+			currentHref.endsWith(optionHref) ||
+			optionHref.endsWith(currentHref) ||
+			(optionHref !== '' && currentHref.includes(optionHref))
+		  ) {
+			select.value = option.value;
+			break;
+		  }
+		}
+	  }
 
-      if (book.locations && book.locations.total) {
-        var percent = book.locations.percentageFromCfi(location.start.cfi);
-        var percentage = Math.round(percent * 100);
-        var progressBar = document.getElementById("progress-bar");
-        var progressText = document.getElementById("progress-text");
-        var pageDisplay = document.getElementById("page-display");
+	  var progressBar = document.getElementById("progress-bar");
+	  var progressText = document.getElementById("progress-text");
+	  var pageDisplay = document.getElementById("page-display");
 
-        if (progressBar) progressBar.style.width = percentage + "%";
-        if (progressText) progressText.innerText = "Tiến trình: " + percentage + "%";
-        if (pageDisplay) pageDisplay.innerText = "Vị trí: " + location.start.location + " / " + book.locations.total;
-      }
-    }
+	  // 2. Kiểm tra nếu đã khởi tạo xong Locations (Dành cho truyện ngắn)
+	  if (book.locations && book.locations.total && book.locations.total > 0) {
+		var percent = book.locations.percentageFromCfi(location.start.cfi);
+		var percentage = Math.round(percent * 100);
+
+		if (progressBar) progressBar.style.width = percentage + "%";
+		if (progressText) progressText.innerText = "Tiến trình: " + percentage + "%";
+		if (pageDisplay) pageDisplay.innerText = "Vị trí: " + location.start.location + " / " + book.locations.total;
+	  } 
+	  // 3. Nếu không tạo Locations (Dành cho truyện dài > 200 chương) -> Chạy chế độ tính theo Số Chương
+	  else if (book.spine && book.spine.spineItems && book.spine.spineItems.length > 0) {
+		var currentIndex = location.start.index;
+		var totalChapters = book.spine.spineItems.length;
+		var currentChapterNum = currentIndex + 1;
+		var percentage = Math.round((currentChapterNum / totalChapters) * 100);
+
+		if (progressBar) progressBar.style.width = percentage + "%";
+		if (progressText) progressText.innerText = "Tiến trình: " + percentage + "%";
+		if (pageDisplay) pageDisplay.innerText = "Chương: " + currentChapterNum + " / " + totalChapters;
+	  }
+	}
 
     rendition.on("relocated", function (location) {
       updateProgress(location);
