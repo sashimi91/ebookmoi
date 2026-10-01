@@ -68,12 +68,15 @@
               target.appendChild(styleEl);
             }
             styleEl.textContent = isDark
-              ? "html, body { background-color: #1e1e1e !important; color: #e2e8f0 !important; line-height: 1.6 !important; }" +
-                "html *, body * { color: #e2e8f0 !important; background-color: #1e1e1e !important; line-height: 1.6 !important; }" +
-                "a, a * { color: #60a5fa !important; }" +
-                "img { opacity: 0.85; }"
-              : "html, body { background-color: #ffffff !important; color: #000000 !important; line-height: 1.6 !important; }" +
-                "html *, body * { color: #000000 !important; background-color: #ffffff !important; line-height: 1.6 !important; }";
+  ? "html, body { background-color: #1e1e1e !important; color: #e2e8f0 !important; line-height: 1.6 !important; margin: 0 !important; padding: 0 12px !important; box-sizing: border-box !important; }" +
+    "p, div { margin-left: 0 !important; margin-right: 0 !important; padding-left: 0 !important; padding-right: 0 !important; }" +
+    "html *, body * { color: #e2e8f0 !important; background-color: transparent !important; line-height: 1.6 !important; }" +
+    "a, a * { color: #60a5fa !important; }" +
+    "img, svg { max-width: 100% !important; height: auto !important; }"
+  : "html, body { background-color: #ffffff !important; color: #000000 !important; line-height: 1.6 !important; margin: 0 !important; padding: 0 12px !important; box-sizing: border-box !important; }" +
+    "p, div { margin-left: 0 !important; margin-right: 0 !important; padding-left: 0 !important; padding-right: 0 !important; }" +
+    "html *, body * { color: #000000 !important; background-color: transparent !important; line-height: 1.6 !important; }" +
+    "img, svg { max-width: 100% !important; height: auto !important; }";
           }
         }
       } catch (e) {}
@@ -210,7 +213,7 @@
     rendition = book.renderTo("epub-viewer", {
       width: "100%",
       height: "100%",
-      spread: "always"
+      spread: "none"
     });
 
     window.currentRendition = rendition;
