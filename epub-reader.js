@@ -361,7 +361,7 @@ styleEl.textContent = isDark
 	  else if (book.spine && book.spine.spineItems && book.spine.spineItems.length > 0) {
 		var currentIndex = location.start.index;
 		var totalChapters = book.spine.spineItems.length;
-		var currentChapterNum = currentIndex + 1;
+		var currentChapterNum = currentIndex;
 		var percentage = Math.round((currentChapterNum / totalChapters) * 100);
 
 		if (progressBar) progressBar.style.width = percentage + "%";
