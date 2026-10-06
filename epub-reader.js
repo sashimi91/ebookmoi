@@ -466,18 +466,11 @@ styleEl.textContent = isDark
       };
     }
   };
-// Tự động chèn CSS responsive cho menu chương & cố định width nút theme
+// Tự động chèn CSS responsive cho menu chọn chương
 var readerStyle = document.createElement("style");
 readerStyle.textContent = `
   #toc-select { max-width: 180px !important; }
   @media (min-width: 768px) { #toc-select { max-width: 300px !important; } }
-  
-  /* Cố định chiều rộng và căn giữa cho nút Đổi chế độ sáng/tối */
-  #reader-theme-btn { 
-    min-width: 115px !important; 
-    justify-content: center !important; 
-    box-sizing: border-box !important;
-  }
 `;
 document.head.appendChild(readerStyle);
 	
