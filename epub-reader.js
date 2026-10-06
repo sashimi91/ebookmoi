@@ -469,8 +469,8 @@ styleEl.textContent = isDark
 // Tự động chèn CSS responsive cho menu chọn chương
 var readerStyle = document.createElement("style");
 readerStyle.textContent = `
-  #toc-select { max-width: 175px !important; }
-  @media (min-width: 768px) { #toc-select { max-width: 300px !important; } }
+  #toc-select { max-width: 180px !important; }
+  @media (min-width: 768px) { #toc-select { max-width: 310px !important; } }
 `;
 document.head.appendChild(readerStyle);
 	
