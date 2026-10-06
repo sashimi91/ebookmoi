@@ -466,4 +466,9 @@ styleEl.textContent = isDark
       };
     }
   };
+	// Tự động chèn CSS responsive cho menu chọn chương
+  var tocStyle = document.createElement("style");
+  tocStyle.textContent = "#toc-select { max-width: 180px !important; } @media (min-width: 768px) { #toc-select { max-width: 300px !important; } }";
+  document.head.appendChild(tocStyle);
+	
 })();
