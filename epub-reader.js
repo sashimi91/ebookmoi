@@ -22,11 +22,11 @@
     var prevBtn = document.getElementById("prev-btn");
     var nextBtn = document.getElementById("next-btn");
 
-    var bgColor = isDark ? "#1e1e1e" : "#ffffff";
-    var controlBg = isDark ? "#2d2d2d" : "#f8fafc";
+    var bgColor = isDark ? "#1e1e1e" : "#f5f0e6";
+    var controlBg = isDark ? "#2d2d2d" : "#efe6d7";
     var borderColor = isDark ? "#3f3f46" : "#e2e8f0";
     var textColor = isDark ? "#e2e8f0" : "#334155";
-    var inputBg = isDark ? "#3f3f46" : "#ffffff";
+    var inputBg = isDark ? "#3f3f46" : "#f5f0e6";
     var inputBorder = isDark ? "#52525b" : "#cbd5e1";
 
     if (container) {
@@ -74,8 +74,8 @@ styleEl.textContent = isDark
     "a, a * { color: #60a5fa !important; }" +
     "img, svg { max-width: 100% !important; height: auto !important; }"
   : "@page { margin: 0 !important; }" +
-    "html, body { background-color: #ffffff !important; color: #000000 !important; line-height: 1.6 !important; margin: 0 !important; padding: 0 !important; }" +
-    "html *, body * { color: #000000 !important; background-color: transparent !important; line-height: 1.6 !important; margin-left: 0 !important; margin-right: 0 !important; padding-left: 0 !important; padding-right: 0 !important; }" +
+    "html, body { background-color: #f5f0e6 !important; color: #1e293b !important; line-height: 1.6 !important; margin: 0 !important; padding: 0 !important; }" +
+    "html *, body * { color: #1e293b !important; background-color: transparent !important; line-height: 1.6 !important; margin-left: 0 !important; margin-right: 0 !important; padding-left: 0 !important; padding-right: 0 !important; }" +
     "img, svg { max-width: 100% !important; height: auto !important; }";
           }
         }
